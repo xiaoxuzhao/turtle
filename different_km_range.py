@@ -56,57 +56,7 @@ for i in range(10):
     s_indx=I[1]
     T.append(t_index)     #turtle index for different range of days
     S.append(s_indx)     #ship index  for different range of days
-##  ######### the below compare ship profile with turtle profile that use the whole points of profile
-'''
-Mean_day=[] # mean difference of temp of turtle vs ship with range of different days and distance
-Rms_day=[]
-N1,N2,N3=[],[],[]#the number of ship profile,turtle profile,turtle
-scales=[]
-for d in range(10): # 4 kind of days 
-    mean_r=[] # mean difference of temp of turtle vs ship with range of  10 type of distance for one day
-    rms_r=[]
-    for s in range(15): #each day includes 15 different range of distance
-        indx=S[d][s] # ship index
-        index=T[d][s]# turtle index
-        INDX=pd.Series(indx).unique()
-        scales.append(str(day[d])+'day '+str(2*s)+'~'+str(2+2*s)+'km')
-        n1=len(INDX)
-        n2=len(pd.Series(index).unique())
-        n3=len(turtle_id[pd.Series(index).unique()].unique())
-        N1.append(n1)
-        N2.append(n2)
-        N3.append(n3)
-        print 'number of ship profile,turtle profile,turtle: ',str(day[d])+'day '+str(2*s)+'~'+str(2+2*s)+'km',n1,n2,n3
-        
-        Mean_turVSship,Rms_turVSship=[],[]
-        for i in range(len(INDX)): 
-            diff_turVSship=[] # each ship pofile have many turtle profile to compare the difference of temp
-            for j in range(len(indx)):
-                if indx[j]==INDX[i]:
-                    for k in range(len(obstemp[index[j]])):
-                        for m in range(len(shipdepth[INDX[i]])):
-                            if obstemp[index[j]][k]==shipdepth[INDX[i]][m]:
-                                dif_turVSship=abs(obsdepth[index[j]][k]-shiptemp[INDX[i]][m])
-                                diff_turVSship.append(dif_turVSship)
-            if diff_turVSship!=[]: #  some turtle dive on the surface ,but the ship data start from the deeper depth
-                mean_turVSship=np.mean(np.array(diff_turVSship))                           
-                rms_turVSship=np.sqrt(np.sum(np.array(diff_turVSship)*np.array(diff_turVSship))/len(np.array(diff_turVSship)))
-                Mean_turVSship.append(mean_turVSship)
-                Rms_turVSship.append(rms_turVSship)
-        mean=np.mean(np.array(Mean_turVSship)) #exact value of one day and one distance
-        rms=np.mean(np.array(Rms_turVSship))
-        mean_r.append(mean) # include 15 values
-        rms_r.append(rms)
-    Mean_day.append(mean_r) # include 4 values
-    Rms_day.append(rms_r)    
-data=pd.DataFrame()
-data['scales']=pd.Series(scales)
-data['number of ship profiles']=pd.Series(N1)
-data['number of turtle profiles']=pd.Series(N2)
-data['number of turtle']=pd.Series(N3)
-data.to_csv('shipVSturtle_scales_big.csv')'''
 
-##  ######### the below compare ship profile with turtle profile that only use the bottom points of profile
 Mean_day=[] # mean difference of temp of turtle vs ship with range of 4 type of day and 15 type of distance
 Rms_day=[]
 N1,N2,N3=[],[],[]#the number of ship profile,turtle profile,turtle
@@ -139,7 +89,7 @@ for d in range(10): # 4 kind of days
                 for j in range(len(indx)):
                     if indx[j]==INDX[i]:
                         wd2=-gettopo(obslat[index[j]],obslon[index[j]])
-                        bm2=obstemp[index[j]][-1] # bottom depth of the turtle profile
+                        bm2=obsDepth[index[j]][-1] # bottom depth of the turtle profile
                         if bm2>=wd2*0.9:
                             dif_turVSship=abs(obstemp[index[j]][-1]-shiptemp[INDX[i]][-1])
                             diff_turVSship.append(dif_turVSship)
@@ -197,7 +147,7 @@ plt.ylabel('temperature difference('+u'°C'+')',fontsize=12)
 plt.legend(loc='lower right',ncol=2,fontsize = 'x-small')
 plt.text(11,0.73,'range of day',fontsize=8)
 fig.tight_layout() # I use it to be sure that the labels can show up on the picture.
-plt.savefig('different_km_range_vertically',dpi=200)       # different_km_range'
+plt.savefig('different_km_range_bottom',dpi=200)       # different_km_range'
 plt.show()
 print 'mean(mean ship-turtle)',np.mean(np.array(M))#Mean_day
 print 'mean(rms ship-turtle)',np.mean(np.array(R))#Rms_day
