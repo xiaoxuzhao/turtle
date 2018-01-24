@@ -10,12 +10,11 @@ import sys
 import pandas as pd
 from datetime import datetime
 import datetime
+import operator
 from dateutil.parser import parse
-from mpl_toolkits.basemap import Basemap
 #sys.path.append('/net/home3/ocn/jmanning/py/mygit/modules/basemap') #JiM's toolbox collection location
 sys.path.append('/home/zdong/anaconda/lib/python2.7/site-packages/mpl_toolkits/basemap') #Xiaoxu's toolbox collection location
 #from basemap_options import basemap_standard as bms #basemap option
-import matplotlib.pyplot as plt
 from math import radians, cos, sin, atan, sqrt
 #########################
 #HARDCODES
@@ -40,12 +39,12 @@ def haversine(loni, lati, lons, lats):
        #print type(d)        
        return d
 # read one data files
-dfh=read_csv(input_dir+'CTSeventList_4589.txt',skiprows=[0])     # loads header (ie metadata)
+dfh=read_csv('CTSeventList_4589.txt',skiprows=[0])     # loads header (ie metadata)
 # extract all FSRS deployment sites
 dfh=dfh[dfh['Cruise'].str.contains('603|604|605')] #extracts only FSRS codes        
-dfh.to_csv('good_date.csv')
+dfh.to_csv('getfsrs.csv')
 #dfh=read_csv('/net/data5/jmanning/cts/getfsrs.csv')
-dfh=read_csv(input_dir+'good_date.csv') 
+dfh=read_csv('getfsrs.csv') 
 n_column= ['Event_Spec','Cruise','Latitude','Longitude','Start','End']      #need this columns form CTSeventList_4589.txt
 dfh = dfh[n_column]
 lat=dfh['Latitude']   #get the column of latitude
@@ -56,18 +55,17 @@ row_num=len(lat)      #get the  num of whole rows
 num_row_near=[]
 min_start_time=[]
 max_end_time=[]
-index=[]
 n_column= ['Event_Spec','Cruise','Latitude','Longitude']      #need this columns form CTSeventList_4589.txt
 dfh = dfh[n_column]
-i=1
+
+i=0
 num=[]
+indexs=[]
 for s in range(0,row_num):    #compare points about distances
      if haversine(lon[i],lat[i],lon[s],lat[s])<1:
             num.append(s)    #get index of the points which within one kilometer
-    #nu=str(num) 
-    #nu=nu.replace(","," ")
 num_row_near.append(len(num))    #get the total num of indexs
-index.append (num)              
+indexs.append (num)              
 start=[]
 end=[]
 for d in range(len(num)):
@@ -84,53 +82,52 @@ maxtime=end[0]
 min_start_time.append(mintime)
 max_end_time.append(maxtime)
 for i in range(1,row_num):
-    if i not in index:
+    I= reduce(operator.concat, indexs)
+    if i not in I:
+        if s not in I:
+           num=[]
+           for s in range(0,row_num):    #compare points about distances
+                if haversine(lon[i],lat[i],lon[s],lat[s])<1:
+                     num.append(s)    #get index of the points which within one kilometer
+           num_row_near.append(len(num))    #get the total num of indexs
+           indexs.append (num)
+    else:
         print i
-        num=[]
-        for s in range(0,row_num):    #compare points about distances
-            if haversine(lon[i],lat[i],lon[s],lat[s])<1:
-                num.append(s)    #get index of the points which within one kilometer
-        nu=str(num) 
-        nu=nu.replace(","," ")
-        num_row_near.append(len(num))    #get the total num of indexs
-        index.append (nu)              
-        start=[]
-        end=[]
-        if len(num) is not 0:
-           for d in range(len(num)):
-               T=Start[num[d]]
-               T_datetime=parse(T)
-               E=End[num[d]]
-               E_datetime=parse(E)
-               start.append(T_datetime)
-               end.append(E_datetime)
-           start.sort()
-           end.sort(reverse=True)
-           mintime=start[0]
-           maxtime=end[0]  
-        else:
-           mintime=Start[i]
-           maxtime=End[i]
-        min_start_time.append(mintime)
-        max_end_time.append(maxtime)
+        indexs.append([5000])
+        num_row_near.append(1)
+    start=[]
+    end=[]
+    if len(num) is not 0:
+         for d in range(len(num)):
+             T=Start[num[d]]
+             T_datetime=parse(T)
+             E=End[num[d]]
+             E_datetime=parse(E)
+             start.append(T_datetime)
+             end.append(E_datetime)
+         start.sort()
+         end.sort(reverse=True)
+         mintime=start[0]
+         maxtime=end[0]  
+    else:
+        mintime=Start[i]
+        maxtime=End[i]
+    min_start_time.append(mintime)
+    max_end_time.append(maxtime)        
 min_start_time=pd.Series( min_start_time)
 dfh['min_start_time'] = min_start_time
 max_end_time=pd.Series( max_end_time)
 dfh['max_end_time'] = max_end_time
 num_row_near= pd.Series(num_row_near)
 dfh['num_row_near'] = num_row_near
-index=pd.Series(index)
-dfh['index'] = index
-for i in range(0,20):
-    delta=max_end_time[i]-min_start_time[i]-datetime.timedelta(365,0,0)
-    if delta<=datetime.timedelta(0,0,0):
+indexs=pd.Series(indexs)
+dfh['indexs'] = indexs
+for i in range(0,row_num):
+    if max_end_time[i]-min_start_time[i]<datetime.timedelta(365,0,0):
         dfh.drop(i, inplace=True)
-    else:
-        if (num_row_near[i]==1):
-           dfh.drop(i, inplace=True)
-dfh = dfh.drop_duplicates(subset=['index'])  #remove repeated rows                 
-dfh=dfh.dropna()  # remove blank rows
+dfh=dfh.dropna()  # remove blank rows 
+for i in dfh.index:
+        if indexs[i]==([5000]):
+             dfh.drop(i, inplace=True)        
 print dfh
-dfh.to_csv('good_date.csv')
-
-
+dfh.to_csv('fsrs_sites.csv')
